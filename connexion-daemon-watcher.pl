@@ -51,6 +51,13 @@ pod2usage(1) if $help;
 
 openlog( 'connexion-daemon-watcher', 'pid', 'daemon' );
 
+# /etc/init.d/connexion-daemon's stop subcommand finds the daemon PID with
+# `ps -ef | grep connex | grep <site> | grep -v grep` and kill -9s the result.
+# Our argv contains both 'connex' (script name + connexion.cnf in -c) and the
+# site name (in the -c path), so we'd be killed as collateral during --restart.
+# Overwriting $0 hides our cmdline from that grep on Linux.
+$0 = 'koha-cnx-watcher';
+
 if ($test_slack) {
     die "--test-slack requires --slack URL\n" unless $slack_url;
     my $hostname = hostname();
