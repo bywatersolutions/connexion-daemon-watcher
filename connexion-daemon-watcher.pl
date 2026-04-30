@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use feature 'say';
+
 use strict;
 use warnings;
 
@@ -273,18 +275,24 @@ sub maybe_restart {
 }
 
 sub restart_daemon {
+	warn "RESTART_DAEMON";
     my $init_script = '/etc/init.d/connexion-daemon';
 
     warn "Restarting connexion daemon via $init_script (stop + start)\n";
 
-    vsay "restart: $init_script stop" if $verbose;
-    my $stop_msg = _describe_rc( system( $init_script, 'stop' ) );
-    vsay "stop: $stop_msg";
+    vsay "stop: $init_script stop" if $verbose;
+
+    my $rc = system( "$init_script stop" );
+    my $stop_msg = _describe_rc( $rc );
+    vsay "stop: $stop_msg ($rc)";
+
+    warn "GRACE: $restart_grace";
+    sleep($restart_grace) if $restart_grace > 0;
 
     vsay "restart: $init_script start" if $verbose;
-    my $start_rc  = system( $init_script, 'start' );
+    my $start_rc  = system( "$init_script start" );
     my $start_msg = _describe_rc($start_rc);
-    vsay "start: $start_msg";
+    vsay "start: $start_msg ($start_rc)";
 
     my $combined = "stop: $stop_msg, start: $start_msg";
     if ( $start_rc == 0 ) {
@@ -349,7 +357,7 @@ sub _age_str {
 
 sub vsay {
     my $msg = join '', @_;
-    print STDERR "$msg\n";
+    say $msg;
     syslog( 'info', '%s', $msg );
     return;
 }
@@ -498,6 +506,7 @@ sub parse_config {
     close $fh;
     return \%param;
 }
+
 
 __END__
 
